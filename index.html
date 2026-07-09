@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fruit Salad Clicker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: linear-gradient(#fff176, #ffb6c1);
+    }
+
+    #fruitSalad {
+      font-size: 130px;
+      cursor: pointer;
+      transition: 0.1s;
+    }
+
+    #fruitSalad:active {
+      transform: scale(0.9);
+    }
+
+    .barBox {
+      width: 80%;
+      height: 30px;
+      background: white;
+      border: 3px solid black;
+      margin: 20px auto;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    #clickBar {
+      height: 100%;
+      width: 0%;
+      background: limegreen;
+    }
+
+    button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #shop {
+      width: 90%;
+      max-height: 450px;
+      overflow-y: scroll;
+      margin: auto;
+      background: white;
+      border: 4px solid black;
+      padding: 10px;
+    }
+
+    .offer {
+      display: block;
+      width: 95%;
+      background: #fff3cd;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🥗 Fruit Salad Clicker 🥗</h1>
+
+<h2>Fruit: <span id="fruit">0</span></h2>
+<h3>Total Fruit Salad Clicks: <span id="clicks">0</span></h3>
+<h3>Fruit Per Click: <span id="fruitPerClick">1</span></h3>
+<h3>Fruit Per Second: <span id="fruitPerSecond">0</span></h3>
+<h3 id="monthlyBonus"></h3>
+
+<div id="fruitSalad">🥗</div>
+
+<div class="barBox">
+  <div id="clickBar"></div>
+</div>
+
+<p>The bar tracks your clicks. It fills every 1,000 fruit salad clicks.</p>
+
+<button onclick="claimDailyReward()">🎁 Claim Free Daily Fruit</button>
+
+<h2>Shop With 100 Offers</h2>
+<div id="shop"></div>
+
+<script>
+  let fruit = Number(localStorage.getItem("fruit")) || 0;
+  let clicks = Number(localStorage.getItem("clicks")) || 0;
+  let fruitPerClick = Number(localStorage.getItem("fruitPerClick")) || 1;
+  let fruitPerSecond = Number(localStorage.getItem("fruitPerSecond")) || 0;
+  let lastDailyReward = Number(localStorage.getItem("lastDailyReward")) || 0;
+
+  const fruitText = document.getElementById("fruit");
+  const clicksText = document.getElementById("clicks");
+  const fruitPerClickText = document.getElementById("fruitPerClick");
+  const fruitPerSecondText = document.getElementById("fruitPerSecond");
+  const clickBar = document.getElementById("clickBar");
+  const shop = document.getElementById("shop");
+  const monthlyBonus = document.getElementById("monthlyBonus");
+
+  let currentMonth = new Date().getMonth();
+  let doubleFruitMonth = currentMonth % 2 === 0;
+
+  function multiplier() {
+    return doubleFruitMonth ? 2 : 1;
+  }
+
+  if (doubleFruitMonth) {
+    monthlyBonus.textContent = "🌟 Monthly Bonus: Double Fruit is active!";
+  } else {
+    monthlyBonus.textContent = "Next month may give double fruit!";
+  }
+
+  document.getElementById("fruitSalad").onclick = function () {
+    fruit += fruitPerClick * multiplier();
+    clicks++;
+    updateGame();
+  };
+
+  function claimDailyReward() {
+    let now = Date.now();
+    let oneDay = 24 * 60 * 60 * 1000;
+
+    if (now - lastDailyReward >= oneDay) {
+      let reward = 500 * multiplier();
+      fruit += reward;
+      lastDailyReward = now;
+      alert("You got " + reward + " free fruit!");
+      updateGame();
+    } else {
+      let hoursLeft = Math.ceil((oneDay - (now - lastDailyReward)) / 1000 / 60 / 60);
+      alert("Come back in about " + hoursLeft + " hours!");
+    }
+  }
+
+  let offers = [];
+
+  for (let i = 1; i <= 100; i++) {
+    offers.push({
+      name: "Fruit Salad Upgrade " + i,
+      cost: Math.floor(20 * Math.pow(1.22, i)),
+      clickPower: i % 2 === 0 ? i : 0,
+      autoPower: i % 2 === 1 ? i : 0
+    });
+  }
+
+  function buildShop() {
+    shop.innerHTML = "";
+
+    for (let i = 0; i < offers.length; i++) {
+      let offer = offers[i];
+      let button = document.createElement("button");
+      button.className = "offer";
+
+      let text = offer.name + " | Cost: " + offer.cost;
+
+      if (offer.clickPower > 0) {
+        text += " | +" + offer.clickPower + " fruit per click";
+      }
+
+      if (offer.autoPower > 0) {
+        text += " | +" + offer.autoPower + " fruit per second";
+      }
+
+      button.textContent = text;
+
+      button.onclick = function () {
+        buyOffer(i);
+      };
+
+      shop.appendChild(button);
+    }
+  }
+
+  function buyOffer(index) {
+    let offer = offers[index];
+
+    if (fruit >= offer.cost) {
+      fruit -= offer.cost;
+      fruitPerClick += offer.clickPower;
+      fruitPerSecond += offer.autoPower;
+      offer.cost = Math.floor(offer.cost * 1.5);
+      updateGame();
+      buildShop();
+    } else {
+      alert("Not enough fruit!");
+    }
+  }
+
+  function updateGame() {
+    fruitText.textContent = Math.floor(fruit);
+    clicksText.textContent = clicks;
+    fruitPerClickText.textContent = fruitPerClick;
+    fruitPerSecondText.textContent = fruitPerSecond;
+
+    let progress = clicks % 1000;
+    clickBar.style.width = progress / 10 + "%";
+
+    localStorage.setItem("fruit", fruit);
+    localStorage.setItem("clicks", clicks);
+    localStorage.setItem("fruitPerClick", fruitPerClick);
+    localStorage.setItem("fruitPerSecond", fruitPerSecond);
+    localStorage.setItem("lastDailyReward", lastDailyReward);
+  }
+
+  setInterval(function () {
+    fruit += fruitPerSecond * multiplier();
+    updateGame();
+  }, 1000);
+
+  buildShop();
+  updateGame();
+</script>
+
+</body>
+</html>
